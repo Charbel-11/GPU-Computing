@@ -75,7 +75,7 @@ void vectorAdditionGPU(double* a, double* b, double* c, unsigned int M) {
 
     const unsigned int numThreadsPerBlock = 512;
     const unsigned int numBlocks = (M + numThreadsPerBlock - 1) / numThreadsPerBlock;
-    vecMax_kernel<<< numBlocks, numThreadsPerBlock >>>(a_d, b_d, c_d, M);
+    vectorAdditionKernel<<< numBlocks, numThreadsPerBlock >>>(a_d, b_d, c_d, M);
 
     /*
      * Call cudaGetLastError() first in order to check for any argument errors in the kernel

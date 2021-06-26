@@ -1,7 +1,6 @@
-NVCC    = /usr/lib/cuda/bin/nvcc
+NVCC    = nvcc
 OBJ     = main.o kernel.o
-EXE     = vecmax
-
+EXE     = vectorOperations
 
 default: $(EXE)
 
