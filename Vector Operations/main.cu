@@ -2,7 +2,7 @@
 #include "timer.h"
 
 void checkIfEqual(double* c_cpu, double* c_gpu, unsigned int N){
-	for(unsigned int i = 0; i < M; ++i) {
+	for(unsigned int i = 0; i < N; ++i) {
         double diff = (c_cpu[i] - c_gpu[i])/c_cpu[i];
         const double tolerance = 1e-9;
         if(diff > tolerance || diff < -tolerance) {
@@ -24,12 +24,12 @@ int main(int argc, char**argv) {
     // Allocate memory and initialize data
     Timer timer;
     unsigned int N = (argc > 1)?(atoi(argv[1])):32000000;
-    double* a = (double*) malloc(M*sizeof(double));
-    double* b = (double*) malloc(M*sizeof(double));
-    double* c_cpu = (double*) malloc(M*sizeof(double));
-    double* c_gpu = (double*) malloc(M*sizeof(double));
+    double* a = (double*) malloc(N*sizeof(double));
+    double* b = (double*) malloc(N*sizeof(double));
+    double* c_cpu = (double*) malloc(N*sizeof(double));
+    double* c_gpu = (double*) malloc(N*sizeof(double));
 	
-    for (unsigned int i = 0; i < M; ++i) {
+    for (unsigned int i = 0; i < N; ++i) {
         a[i] = rand(); b[i] = rand();
     }
 
