@@ -25,8 +25,8 @@ void vectorMaxCPU(double* a, double* b, double* c, unsigned int N) {
 }
 
 void vectorOperationCPU(double* a, double* b, double* c, unsigned int N, unsigned int type){
-	if (type == 1){ vectorAdditionCPU(a, b, c_cpu, N); }
-	else if (type == 2){ vectorMaxCPU(a, b, c_cpu, N); }
+	if (type == 1){ vectorAdditionCPU(a, b, c, N); }
+	else if (type == 2){ vectorMaxCPU(a, b, c, N); }
 }
 
 //./main N type where N is the size of the vector and type is the operation (1 for add, 2 for max)
@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
 
     // Compute on CPU
     startTime(&timer);
-	vectorOperationCPU(a, b, c_gpu, N, type);	
+	vectorOperationCPU(a, b, c_cpu, N, type);	
     stopTime(&timer);
     printElapsedTime(timer, "CPU time", CYAN);
 
