@@ -19,6 +19,10 @@ __global__ void vectorMaxKernel(double* a, double* b, double* c, unsigned int N)
 	if (i < N){ c[i] = (a[i] > b[i]) ? a[i] : b[i]; }
 }
 
+__global__ void vectorProductKernel(double* a, double* b, double* c, unsigned int N) {
+    int i = (blockDim.x * blockIdx.x) + threadIdx.x;
+	if (i < N){ c[i] = a[i] * b[i]; }
+}
 
 void vectorOperationGPU(double* a, double* b, double* c, unsigned int N, unsigned int type) {
     Timer timer;
@@ -52,6 +56,7 @@ void vectorOperationGPU(double* a, double* b, double* c, unsigned int N, unsigne
     const unsigned int numBlocks = (N + numThreadsPerBlock - 1) / numThreadsPerBlock;
     if (type == 1) { vectorAdditionKernel<<< numBlocks, numThreadsPerBlock >>>(a_d, b_d, c_d, N); }
     else if (type == 2) { vectorMaxKernel<<< numBlocks, numThreadsPerBlock >>>(a_d, b_d, c_d, N); }
+    else if (type == 3) { vectorProductKernel<<< numBlocks, numThreadsPerBlock >>>(a_d, b_d, c_d, N); }
     cudaErrorCheck(cudaGetLastError());			//For arguments errors
     cudaErrorCheck(cudaDeviceSynchronize());	//For execution error in the kernel
     
