@@ -22,15 +22,14 @@ static void stopTime(Timer* timer) {
 static void printElapsedTime(Timer timer, const char* s, enum PrintColor color = NONE) {
     float t = ((float)((timer.endTime.tv_sec - timer.startTime.tv_sec) \
         + (timer.endTime.tv_usec - timer.startTime.tv_usec) / 1.0e6));
-    switch (color) {
-    case GREEN:  printf("\033[1;32m"); break;
-    case DGREEN: printf("\033[0;32m"); break;
-    case CYAN:  printf("\033[1;36m"); break;
-    }
+		
+	if (color == GREEN) { printf("\033[1;32m"); }
+	else if (color == DGREEN) { printf("\033[0;32m"); }
+	else if (color == CYAN) { printf("\033[1;36m"); }
+	
     printf("%s: %f s\n", s, t);
-    if (color != NONE) {
-        printf("\033[0m");
-    }
+    
+	if (color != NONE) { printf("\033[0m"); }
 }
 
 #endif

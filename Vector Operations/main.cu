@@ -1,12 +1,13 @@
 #include "common.h"
 #include "timer.h"
 
-void checkIfEqual(double* c_cpu, double* c_gpu, unsigned int N){
-	for(unsigned int i = 0; i < N; ++i) {
-        double diff = (c_cpu[i] - c_gpu[i])/c_cpu[i];
-        const double tolerance = 1e-9;
-        if(diff > tolerance || diff < -tolerance) {
-            printf("Mismatch at index %u (CPU result = %e, GPU result = %e)\n", i, c_cpu[i], c_gpu[i]);
+const double eps = 1e-9;
+
+void checkIfEqual(double* cpuArray, double* gpuArray, unsigned int N){
+	for(unsigned int i = 0; i < N; i++) {
+        double diff = (cpuArray[i] - gpuArray[i])/cpuArray[i];	//division is to get relative error
+        if(diff > eps || diff < -eps) {
+            printf("Arrays are not equal: (cpuArray[%u] = %e, GPUArray[%u] = %e)\n", i, cpuArray[i], i, gpuArray[i]);
             exit(0);
         }
     }
@@ -17,31 +18,43 @@ void vectorAdditionCPU(double* a, double* b, double* c, unsigned int N) {
         c[i] = a[i] + b[i];
     }
 }
+void vectorMaxCPU(double* a, double* b, double* c, unsigned int N) {
+    for(unsigned int i = 0; i < N; i++) {
+        c[i] = (a[i] > b[i]) ? a[i] : b[i];
+    }
+}
 
-int main(int argc, char**argv) {
+void vectorOperationCPU(double* a, double* b, double* c, unsigned int N, unsigned int type){
+	if (type == 1){ vectorAdditionCPU(a, b, c_cpu, N); }
+	else if (type == 2){ vectorMaxCPU(a, b, c_cpu, N); }
+}
+
+//./main N type where N is the size of the vector and type is the operation (1 for add, 2 for max)
+int main(int argc, char** argv) {
     cudaDeviceSynchronize();
+
+    unsigned int N = (argc > 1) ? (atoi(argv[1])) : 32000000;
+	unsigned int type = (argc > 2) ? (atoi(argv[2])) : 1;
 
     // Allocate memory and initialize data
     Timer timer;
-    unsigned int N = (argc > 1)?(atoi(argv[1])):32000000;
     double* a = (double*) malloc(N*sizeof(double));
     double* b = (double*) malloc(N*sizeof(double));
     double* c_cpu = (double*) malloc(N*sizeof(double));
     double* c_gpu = (double*) malloc(N*sizeof(double));
 	
-    for (unsigned int i = 0; i < N; ++i) {
-        a[i] = rand(); b[i] = rand();
-    }
+	//Initializing two random arrays
+    for (unsigned int i = 0; i < N; i++) { a[i] = rand(); b[i] = rand(); }
 
     // Compute on CPU
     startTime(&timer);
-    vectorAdditionCPU(a, b, c_cpu, N);
+	vectorOperationCPU(a, b, c_gpu, N, type);	
     stopTime(&timer);
     printElapsedTime(timer, "CPU time", CYAN);
 
     // Compute on GPU
     startTime(&timer);
-    vectorAdditionGPU(a, b, c_gpu, N);
+	vectorOperationGPU(a, b, c_gpu, N, type);
     stopTime(&timer);
     printElapsedTime(timer, "GPU time", DGREEN);
 
@@ -49,12 +62,8 @@ int main(int argc, char**argv) {
     checkIfEqual(c_cpu, c_gpu, N);
 
     // Free memory
-    free(a);
-    free(b);
-    free(c_cpu);
-    free(c_gpu);
+    free(a); free(b);
+    free(c_cpu); free(c_gpu);
 
     return 0;
-
 }
-

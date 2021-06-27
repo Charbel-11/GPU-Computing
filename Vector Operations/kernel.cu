@@ -1,122 +1,80 @@
 #include "common.h"
 #include "timer.h"
 
-/*
- * Macro to avoid duplication of error checking code for functions
- * such as cudaMalloc(), cudaMemcpy() and cudaFree()
- */
 #define cudaErrorCheck(error) { gpuAssert((error), __FILE__, __LINE__); }
-
-/*
- * Abort is set to True by default in order to immediately stop program execution
- */ 
-void gpuAssert(cudaError_t code, const char *file, const int line, bool abort=true) {
-   
+void gpuAssert(cudaError_t code, const char *file, const int line) {
     if (code != cudaSuccess) {
-      fprintf(stderr, "CUDA Error: %s in file: %s (line: %d)\n", cudaGetErrorString(code), file, line);
-      if (abort) {
-          exit(code);
-      }
-   }
-
+		fprintf(stderr, "CUDA Error: %s in file %s at line %d\n", cudaGetErrorString(code), file, line);
+		exit(code);
+	}
 }
 
 __global__ void vectorAdditionKernel(double* a, double* b, double* c, unsigned int N) {
     int i = (blockDim.x * blockIdx.x) + threadIdx.x;
-
-	if (i < N){
-		c[i] = a[i] + b[i];
-    }
-
+	if (i < N){ c[i] = a[i] + b[i]; }
 }
 
-void vectorAdditionGPU(double* a, double* b, double* c, unsigned int M) {
+__global__ void vectorMaxKernel(double* a, double* b, double* c, unsigned int N) {
+    int i = (blockDim.x * blockIdx.x) + threadIdx.x;
+	if (i < N){ c[i] = (a[i] > b[i]) ? a[i] : b[i]; }
+}
 
+
+void vectorOperationGPU(double* a, double* b, double* c, unsigned int N, unsigned int type) {
     Timer timer;
 
-    /*
-     * Allocate GPU memory
-     */
+    //Allocating GPU memory
     startTime(&timer);
 
     double *a_d, *b_d, *c_d;
-    cudaError_t errMallocA = cudaMalloc((void **) &a_d, M * sizeof(double));
-    cudaErrorCheck(errMallocA);
+    cudaError_t errMallocA = cudaMalloc((void **) &a_d, N * sizeof(double)); cudaErrorCheck(errMallocA);
+    cudaError_t errMallocB = cudaMalloc((void **) &b_d, N * sizeof(double)); cudaErrorCheck(errMallocB);
+    cudaError_t errMallocC = cudaMalloc((void **) &c_d, N * sizeof(double)); cudaErrorCheck(errMallocC);
 
-    cudaError_t errMallocB = cudaMalloc((void **) &b_d, M * sizeof(double));
-    cudaErrorCheck(errMallocB);
-
-    cudaError_t errMallocC = cudaMalloc((void **) &c_d, M * sizeof(double));
-    cudaErrorCheck(errMallocC);
-
-    cudaDeviceSynchronize();
+    cudaDeviceSynchronize();		//To get the correct time since GPU/CPU run asynchronously
     stopTime(&timer);
-    printElapsedTime(timer, "Allocation time");
+    printElapsedTime(timer, "GPU Allocation time");
 
-    /*
-     * Copy data to GPU from Host
-     */
+    //Copying data to GPU from Host
     startTime(&timer);
 
-    cudaError_t errMemcpyA = cudaMemcpy(a_d, a, M * sizeof(double), cudaMemcpyHostToDevice);
-    cudaErrorCheck(errMemcpyA);
-
-    cudaError_t errMemcpyB = cudaMemcpy(b_d, b, M * sizeof(double), cudaMemcpyHostToDevice);
-    cudaErrorCheck(errMemcpyB);
+    cudaError_t errMemcpyA = cudaMemcpy(a_d, a, N * sizeof(double), cudaMemcpyHostToDevice); cudaErrorCheck(errMemcpyA);
+    cudaError_t errMemcpyB = cudaMemcpy(b_d, b, N * sizeof(double), cudaMemcpyHostToDevice); cudaErrorCheck(errMemcpyB);
 
     cudaDeviceSynchronize();
     stopTime(&timer);
-    printElapsedTime(timer, "Copy to GPU time");
+    printElapsedTime(timer, "Copying to GPU time");
     
-    /* 
-     * Call kernel
-     */
+    //Calling kernel
     startTime(&timer);
 
     const unsigned int numThreadsPerBlock = 512;
-    const unsigned int numBlocks = (M + numThreadsPerBlock - 1) / numThreadsPerBlock;
-    vectorAdditionKernel<<< numBlocks, numThreadsPerBlock >>>(a_d, b_d, c_d, M);
-
-    /*
-     * Call cudaGetLastError() first in order to check for any argument errors in the kernel
-     *  
-     * Call error-checking macro on cudaDeviceSynchronize() afterwards in order to wait for the
-     * kernel to completely finish and check for any error while executing the kernel code
-     */ 
-    cudaErrorCheck(cudaGetLastError());
-    cudaErrorCheck(cudaDeviceSynchronize());
+    const unsigned int numBlocks = (N + numThreadsPerBlock - 1) / numThreadsPerBlock;
+    if (type == 1) { vectorAdditionKernel<<< numBlocks, numThreadsPerBlock >>>(a_d, b_d, c_d, N); }
+    else if (type == 2) { vectorMaxKernel<<< numBlocks, numThreadsPerBlock >>>(a_d, b_d, c_d, N); }
+    cudaErrorCheck(cudaGetLastError());			//For arguments errors
+    cudaErrorCheck(cudaDeviceSynchronize());	//For execution error in the kernel
     
     stopTime(&timer);
-    printElapsedTime(timer, "Kernel time", GREEN);
+    printElapsedTime(timer, "Running the kernel time", GREEN);
     
-    /*
-     * Copy data from GPU to Host
-     */
+    //Copying data from GPU to Host
     startTime(&timer);
 
-    cudaError_t errMemcpyC = cudaMemcpy(c, c_d, M * sizeof(double), cudaMemcpyDeviceToHost);
-    cudaErrorCheck(errMemcpyC);
+    cudaError_t errMemcpyC = cudaMemcpy(c, c_d, N * sizeof(double), cudaMemcpyDeviceToHost);  cudaErrorCheck(errMemcpyC);
 
     cudaDeviceSynchronize();
     stopTime(&timer);
-    printElapsedTime(timer, "Copy from GPU time");
+    printElapsedTime(timer, "Copying from GPU time");
     
-    /*
-     * Free GPU memory
-     */
+    //Freeing GPU memory
     startTime(&timer);
 
-    cudaError_t errFreeA = cudaFree(a_d);
-    cudaErrorCheck(errFreeA);
-
-    cudaError_t errFreeB = cudaFree(b_d);
-    cudaErrorCheck(errFreeB);
-
-    cudaError_t errFreeC = cudaFree(c_d);
-    cudaErrorCheck(errFreeC);
-
+    cudaError_t errFreeA = cudaFree(a_d); cudaErrorCheck(errFreeA);
+    cudaError_t errFreeB = cudaFree(b_d); cudaErrorCheck(errFreeB);
+    cudaError_t errFreeC = cudaFree(c_d); cudaErrorCheck(errFreeC);
+    
     cudaDeviceSynchronize();
     stopTime(&timer);
-    printElapsedTime(timer, "Deallocation time");
-
+    printElapsedTime(timer, "GPU Deallocation time");
 }
