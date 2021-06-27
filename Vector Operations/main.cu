@@ -29,12 +29,12 @@ void vectorOperationCPU(double* a, double* b, double* c, unsigned int N, unsigne
 	else if (type == 2){ vectorMaxCPU(a, b, c, N); }
 }
 
-//./main N type where N is the size of the vector and type is the operation (1 for add, 2 for max)
+//./main type N where N is the size of the vector and type is the operation (1 for add, 2 for max)
 int main(int argc, char** argv) {
     cudaDeviceSynchronize();
 
-    unsigned int N = (argc > 1) ? (atoi(argv[1])) : 32000000;
-	unsigned int type = (argc > 2) ? (atoi(argv[2])) : 1;
+	unsigned int type = (argc > 1) ? (atoi(argv[1])) : 1;
+    unsigned int N = (argc > 2) ? (atoi(argv[2])) : 32000000;
 
     // Allocate memory and initialize data
     Timer timer;
