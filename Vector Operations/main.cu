@@ -15,7 +15,7 @@ void checkIfEqual(double* cpuArray, double* gpuArray, unsigned int N){
 
 void vectorAdditionCPU(double* a, double* b, double* c, unsigned int N) {
     for(unsigned int i = 0; i < N; i++) {
-        c[i] = a[i] + b[i];
+        c[i] = a[i] + b[i] + 1;
     }
 }
 void vectorMaxCPU(double* a, double* b, double* c, unsigned int N) {
@@ -35,6 +35,9 @@ int main(int argc, char** argv) {
 
 	unsigned int type = (argc > 1) ? (atoi(argv[1])) : 1;
     unsigned int N = (argc > 2) ? (atoi(argv[2])) : 32000000;
+
+	if (type == 1){ printf("Running vector addition"); }
+	else if (type == 2){ printf("Running vector max"); }
 
     // Allocate memory and initialize data
     Timer timer;
