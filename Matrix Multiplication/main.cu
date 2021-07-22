@@ -1,10 +1,10 @@
 #include "common.h"
 #include "timer.h"
 
-const double eps = 1e-9;
-void checkIfEqual(double* cpuArray, double* gpuArray, unsigned int N){
+const float eps = 0.00001;
+void checkIfEqual(float* cpuArray, float* gpuArray, unsigned int N){
 	for(unsigned int i = 0; i < N; i++) {
-        double diff = (cpuArray[i] - gpuArray[i])/cpuArray[i];	//division is to get relative error
+        float diff = (cpuArray[i] - gpuArray[i])/cpuArray[i];	//division is to get relative error
         if(diff > eps || diff < -eps) {
             printf("Arrays are not equal (cpuArray[%u] = %e, GPUArray[%u] = %e)\n", i, cpuArray[i], i, gpuArray[i]);
             exit(0);
@@ -36,8 +36,8 @@ int main(int argc, char**argv) {
     unsigned int K = (argc > 3) ? (atoi(argv[3])): 500;
     unsigned int N = (argc > 4) ? (atoi(argv[4])): 500;
 	
-	if (type == 1){ printf("Running basic parallelized Matrix Multiplication"); }
-	else { printf("Running parallelized Matrix Multiplication with memory tiling"); }
+	if (type == 1){ printf("Running basic parallelized Matrix Multiplication\n"); }
+	else { printf("Running parallelized Matrix Multiplication with memory tiling\n"); }
 		
     float* A = (float*) malloc(M*K*sizeof(float));
     float* B = (float*) malloc(K*N*sizeof(float));
