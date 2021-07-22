@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <sys/time.h>
 
-enum PrintColor { NONE, GREEN, DGREEN, CYAN };
+enum PrintColor { NONE, GREEN, RED, BLUE };
 
 typedef struct {
     struct timeval startTime;
@@ -23,9 +23,9 @@ static void printElapsedTime(Timer timer, const char* s, enum PrintColor color =
     float t = ((float)((timer.endTime.tv_sec - timer.startTime.tv_sec) \
         + (timer.endTime.tv_usec - timer.startTime.tv_usec) / 1.0e6));
 		
-	if (color == GREEN) { printf("\033[1;32m"); }
-	else if (color == DGREEN) { printf("\033[0;32m"); }
-	else if (color == CYAN) { printf("\033[1;36m"); }
+	if (color == RED) { printf("\033[0;31m"); }
+	else if (color == GREEN) { printf("\033[1;32m"); }
+	else if (color == BLUE) { printf("\033[0;34m"); }
 	
     printf("%s: %f s\n", s, t);
     

@@ -2,7 +2,6 @@
 #include "timer.h"
 
 const double eps = 1e-9;
-
 void checkIfEqual(double* cpuArray, double* gpuArray, unsigned int N){
 	for(unsigned int i = 0; i < N; i++) {
         double diff = (cpuArray[i] - gpuArray[i])/cpuArray[i];	//division is to get relative error
@@ -60,13 +59,13 @@ int main(int argc, char** argv) {
     startTime(&timer);
 	vectorOperationCPU(a, b, c_cpu, N, type);	
     stopTime(&timer);
-    printElapsedTime(timer, "CPU time", CYAN);
+    printElapsedTime(timer, "CPU time", BLUE);
 
     // Compute on GPU
     startTime(&timer);
 	vectorOperationGPU(a, b, c_gpu, N, type);
     stopTime(&timer);
-    printElapsedTime(timer, "GPU time", DGREEN);
+    printElapsedTime(timer, "GPU time", RED);
 
     // Verify result
     checkIfEqual(c_cpu, c_gpu, N);
