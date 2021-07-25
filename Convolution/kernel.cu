@@ -60,7 +60,7 @@ __global__ void convolutionKernelWithTiling(float* input, float* output, unsigne
 	}
 }
 
-void convolutionGPU(float* input_d, float* output_d, float mask[MASK_DIM][MASK_DIM], unsigned int width, unsigned int height, unsigned int type) {
+void convolutionGPU(float* input, float* output, float mask[MASK_DIM][MASK_DIM], unsigned int width, unsigned int height, unsigned int type) {
     Timer timer;
 
 	// Allocating GPU memory
@@ -104,7 +104,7 @@ void convolutionGPU(float* input_d, float* output_d, float mask[MASK_DIM][MASK_D
 	//Copying data from GPU to Host
     startTime(&timer);
 
-    cudaError_t errMemcpyC = cudaMemcpy(output_gpu, output_d, width*height*sizeof(float), cudaMemcpyDeviceToHost); cudaErrorCheck(errMemcpyC);
+    cudaError_t errMemcpyC = cudaMemcpy(output, output_d, width*height*sizeof(float), cudaMemcpyDeviceToHost); cudaErrorCheck(errMemcpyC);
 
     cudaDeviceSynchronize();
     stopTime(&timer);
