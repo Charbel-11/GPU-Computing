@@ -2,7 +2,7 @@
 #include "timer.h"
 
 #define OUT_BLOCK_DIM 32
-#define IN_TILE_DIM 32
+#define IN_TILE_DIM 64
 #define OUT_TILE_DIM ((IN_TILE_DIM) - 2*(MASK_RADIUS))
 
 #define cudaErrorCheck(error) { gpuAssert((error), __FILE__, __LINE__); }
