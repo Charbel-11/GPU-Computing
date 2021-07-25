@@ -42,6 +42,9 @@ int main(int argc, char**argv) {
     unsigned int height = (argc > 2) ? (atoi(argv[2])) : 5000;
     unsigned int width = (argc > 3) ? (atoi(argv[3])) : 5000;
 	
+	if (type == 1){ printf("Running basic parallelized Convolution\n"); }
+	else { printf("Running parallelized Convolution with shared memory tiling\n"); }
+	
     float* input = (float*) malloc(width*height*sizeof(float));
     float* output_cpu = (float*) malloc(width*height*sizeof(float));
     float* output_gpu = (float*) malloc(width*height*sizeof(float));
