@@ -25,7 +25,7 @@ void matrixMultiplicationCPU(float* A, float* B, float* C, unsigned int M, unsig
 }
 
 // Multiplies matrices A (MxK) and B (KxN) to get C (MxN)
-// type 1: uses one thread/output;  type 2: uses memory tiling
+// type 1: uses one thread/output;  type 2: uses shared memory tiling
 int main(int argc, char**argv) {
     cudaDeviceSynchronize();
 
@@ -37,7 +37,7 @@ int main(int argc, char**argv) {
     unsigned int N = (argc > 4) ? (atoi(argv[4])): 500;
 	
 	if (type == 1){ printf("Running basic parallelized Matrix Multiplication\n"); }
-	else { printf("Running parallelized Matrix Multiplication with memory tiling\n"); }
+	else { printf("Running parallelized Matrix Multiplication with shared memory tiling\n"); }
 		
     float* A = (float*) malloc(M*K*sizeof(float));
     float* B = (float*) malloc(K*N*sizeof(float));
