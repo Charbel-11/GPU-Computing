@@ -1,17 +1,17 @@
 #include "common.h"
 #include "timer.h"
 
-const float eps = 0.00001;
-void checkIfEqual(float cpuVal, float gpuVal){
-    float diff = (cpuVal - gpuVal)/cpuVal;	//division is to get relative error
+const double eps = 0.00001;
+void checkIfEqual(double cpuVal, double gpuVal){
+    double diff = (cpuVal - gpuVal)/cpuVal;	//division is to get relative error
     if(diff > eps || diff < -eps) {
         printf("Values are not equal (cpuVal = %e, gpuVal = %e)\n", cpuVal, gpuVal);
         exit(0);
     }
 }
 
-float reduceCPU(float* input, unsigned int N) {
-    float sum = identity;
+double reduceCPU(double* input, unsigned int N) {
+    double sum = identity;
     for(unsigned int i = 0; i < N; ++i) {
         sum = f(sum, input[i]);
     }
@@ -31,19 +31,19 @@ int main(int argc, char**argv) {
 	if (type == 1){ printf("Running parallelized reduction\n"); }
 	else { printf("Running parallelized reduction with thread coarsening\n"); }
 	
-    float* input = (float*) malloc(N*sizeof(float));
+    double* input = (double*) malloc(N*sizeof(double));
     for (unsigned int i = 0; i < N; ++i)
         input[i] = 1.0*rand()/RAND_MAX;
     
     // Compute on CPU
     startTime(&timer);
-    float cpuVal = reduceCPU(input, N);
+    double cpuVal = reduceCPU(input, N);
     stopTime(&timer);
     printElapsedTime(timer, "CPU time", BLUE);
 
     // Compute on GPU
     startTime(&timer);
-    float gpuVal = reduceGPU(input, N, type);
+    double gpuVal = reduceGPU(input, N, type);
     stopTime(&timer);
     printElapsedTime(timer, "GPU time", RED);
 
