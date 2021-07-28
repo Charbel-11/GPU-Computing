@@ -12,6 +12,10 @@ void gpuAssert(cudaError_t code, const char *file, const int line) {
 	}
 }
 
+__host__ __device__ float f(float a, float b){
+	return a+b;
+}
+
 __global__ void reduceKernel(float* input, float* partialSums, unsigned int N) {
     unsigned int segment = 2 * blockDim.x * blockIdx.x;
     unsigned int i = segment + threadIdx.x;
