@@ -29,14 +29,14 @@ __global__ void reduceKernel(float* input, float* partialSums, unsigned int N) {
 
     // Reduction tree in shared memory with memory coalescing 
     for (unsigned int stride = BLOCK_DIM / 2; stride > 0; stride /= 2) {
-		if (threadIdx.x < stride) {
+		if (threadIdx.x < stride && threadIdx.x + stride < BLOCK_DIM) {
             input_s[threadIdx.x] = f(input_s[threadIdx.x], input_s[threadIdx.x + stride]);
         }      
         __syncthreads();
     }
 
     if (threadIdx.x == BLOCK_DIM - 1) {
-        partialSums[blockIdx.x] = input_s[threadIdx.x];
+        partialSums[blockIdx.x] = input_s[0];
     }
 }
 
@@ -63,7 +63,7 @@ __global__ void reduceKernelWithThreadCoarsening(float* input, float* partialSum
     }
 
     if (threadIdx.x == BLOCK_DIM - 1) {
-        partialSums[blockIdx.x] = input_s[threadIdx.x];
+        partialSums[blockIdx.x] = input_s[0];
     }
 }
 
