@@ -45,6 +45,44 @@ __global__ void scanKernelKoggeStone(double* input, double* output, double* part
     if (i < N) { output[i] = prevBuffer_s[threadIdx.x]; }
 }
 
+// Scans exactly one block
+__global__ void scanKernelBrentKung(double* input, double* output, double* partialSums, unsigned int N){
+    unsigned int segment = 2 * blockIdx.x * blockDim.x;
+    unsigned int i1 = segment + threadIdx.x;
+    unsigned int i2 = i1 + BLOCK_DIM;
+
+    __shared__ double buffer_s[2 * BLOCK_DIM];
+
+    if (i1 < N) { buffer_s[threadIdx.x] = input[i1]; }
+    else { buffer_s[threadIdx.x] = identity; }
+    if (i2 < N) { buffer_s[threadIdx.x + BLOCK_DIM] = input[i2]; }
+    else { buffer_s[threadIdx.x + BLOCK_DIM] = identity; }
+    __syncthreads();
+
+    // Reduction Step
+    for (unsigned int stride = 1; stride <= BLOCK_DIM; stride *= 2) {
+        unsigned int i = (threadIdx.x + 1) * 2 * stride - 1;  
+        if (i < 2 * BLOCK_DIM) { buffer_s[i] = f(buffer_s[i], buffer_s[i - stride]); }
+        __syncthreads();
+    }
+
+    // Post-reduction Step
+    for (unsigned int stride = BLOCK_DIM/2; stride >= 1; stride /= 2) {
+        unsigned int i = (threadIdx.x + 1) * 2 * stride - 1;
+        if (i + stride < 2 * BLOCK_DIM) { buffer_s[i + stride] = f(buffer_s[i + stride], buffer_s[i]); }
+        __syncthreads();
+    }
+
+    // Store partial sum
+    if (threadIdx.x == 0){
+        partialSums[blockIdx.x] = buffer_s[2 * BLOCK_DIM - 1];
+    }
+
+    // Store output
+    if (i1 < N) { output[i1] = buffer_s[threadIdx.x]; } 
+    if (i2 < N) { output[i2] = buffer_s[threadIdx.x + BLOCK_DIM]; }          
+}
+
 __global__ void addKernelKoggeStone(double* output, double* partialSums, unsigned int N) {
     unsigned int segment = blockIdx.x * blockDim.x;
 
@@ -81,7 +119,7 @@ void scanHelperGPU(double* input_d, double* output_d, unsigned int N, unsigned i
     // Calling the kernel to scan each block on its own
     startTime(&timer);
     if (type == 1) { scanKernelKoggeStone <<< numBlocks, numThreadsPerBlock >>> (input_d, output_d, partialSums_d, N); }
-    else { } 
+    else { scanKernelBrentKung <<< numBlocks, numThreadsPerBlock >>> (input_d, output_d, partialSums_d, N); } 
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU kernel time", GREEN);
