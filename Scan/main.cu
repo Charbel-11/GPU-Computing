@@ -15,7 +15,7 @@ void checkIfEqual(double* cpuArray, double* gpuArray, unsigned int N){
 void scanCPU(double* input, double* output, unsigned int N) {
     output[0] = input[0];
     for(unsigned int i = 1; i < N; i++) {
-        output[i] = f(output[i - 1], input[i - 1]);
+        output[i] = f(output[i - 1], input[i]);
     }
 }
 

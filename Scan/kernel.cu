@@ -45,7 +45,15 @@ __global__ void scanKernelKoggeStone(double* input, double* output, double* part
     if (i < N) { output[i] = prevBuffer_s[threadIdx.x]; }
 }
 
-__global__ void add_kernel(double* output, double* partialSums, unsigned int N) {
+__global__ void addKernelKoggeStone(double* output, double* partialSums, unsigned int N) {
+    unsigned int segment = blockIdx.x * blockDim.x;
+
+    if (blockIdx.x > 0 && segment + threadIdx.x < N) {
+        output[segment + threadIdx.x] = f(output[segment + threadIdx.x], partialSums[blockIdx.x - 1]);
+    }
+}
+
+__global__ void addKernelBrentKung(double* output, double* partialSums, unsigned int N) {
     unsigned int segment = 2 * blockIdx.x * blockDim.x;
 
     if (blockIdx.x > 0) {
@@ -62,7 +70,7 @@ void scanHelperGPU(double* input_d, double* output_d, unsigned int N, unsigned i
     Timer timer;
 
     const unsigned int numThreadsPerBlock = BLOCK_DIM;
-    const unsigned int numElementsPerBlock = 2*numThreadsPerBlock;
+    const unsigned int numElementsPerBlock = numThreadsPerBlock * ((type == 1) ? 1 : 2);
     const unsigned int numBlocks = (N + numElementsPerBlock - 1) / numElementsPerBlock;
 
     // Allocating partial sums
@@ -72,7 +80,8 @@ void scanHelperGPU(double* input_d, double* output_d, unsigned int N, unsigned i
 
     // Calling the kernel to scan each block on its own
     startTime(&timer);
-    scanKernelKoggeStone <<< numBlocks, numThreadsPerBlock >>> (input_d, output_d, partialSums_d, N);
+    if (type == 1) { scanKernelKoggeStone <<< numBlocks, numThreadsPerBlock >>> (input_d, output_d, partialSums_d, N); }
+    else { } 
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU kernel time", GREEN);
@@ -80,7 +89,8 @@ void scanHelperGPU(double* input_d, double* output_d, unsigned int N, unsigned i
     // Recursively scan partial sums then add
     if (numBlocks > 1) {
         scanHelperGPU(partialSums_d, partialSums_d, numBlocks, type);
-        add_kernel <<< numBlocks, numThreadsPerBlock >>> (output_d, partialSums_d, N);
+        if (type == 1) { addKernelKoggeStone <<< numBlocks, numThreadsPerBlock >>> (output_d, partialSums_d, N); }
+        else { addKernelBrentKung <<< numBlocks, numThreadsPerBlock >>> (output_d, partialSums_d, N); } 
     }
 
     // Free memory
