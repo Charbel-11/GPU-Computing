@@ -1,5 +1,5 @@
 NVCC    = nvcc
-OBJ     = main.o kernel.o
+OBJ     = main.o vectorOp.o
 EXE     = vectorOperations
 
 default: $(EXE)

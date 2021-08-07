@@ -1,4 +1,4 @@
-#include "common.h"
+#include "vectorOp.h"
 #include "../Helper_Code/timer.h"
 
 const double eps = 1e-9;
