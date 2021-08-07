@@ -1,5 +1,5 @@
-#ifndef _COMMON_H_
-#define _COMMON_H_
+#ifndef _HISTOGRAM_H_
+#define _HISTOGRAM_H_
 
 #define NUM_BINS 256
 

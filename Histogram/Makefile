@@ -1,6 +1,6 @@
 NVCC        = nvcc
 NVCC_FLAGS  = -O3
-OBJ         = main.o kernel.o
+OBJ         = main.o histogram.o
 EXE         = histogram
 
 default: $(EXE)

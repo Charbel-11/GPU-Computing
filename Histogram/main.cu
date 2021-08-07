@@ -1,4 +1,4 @@
-#include "common.h"
+#include "histogram.h"
 #include "../Helper_Code/timer.h"
 
 void checkIfEqual(unsigned int* binsCPU, unsigned int* binsGPU) {
