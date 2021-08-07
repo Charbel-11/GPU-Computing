@@ -1,16 +1,8 @@
-#include "common.h"
+#include "reduction.h"
 #include "../Helper_Code/timer.h"
 
 #define BLOCK_DIM 1024  
 #define COARSE_FACTOR 3
-
-#define cudaErrorCheck(error) { gpuAssert((error), __FILE__, __LINE__); }
-void gpuAssert(cudaError_t code, const char *file, const int line) {
-    if (code != cudaSuccess) {
-		fprintf(stderr, "CUDA Error: %s in file %s at line %d\n", cudaGetErrorString(code), file, line);
-		exit(code);
-	}
-}
 
 __host__ __device__ double f(double a, double b){
 	return a+b;
@@ -72,35 +64,31 @@ double reduceGPU(double* input, unsigned int N, unsigned int type) {
 
 	// Allocating GPU memory
     startTime(&timer);
-	
     double *input_d;
-    cudaError_t errMallocA = cudaMalloc((void**) &input_d, N*sizeof(double)); cudaErrorCheck(errMallocA);
-    
+    cudaMalloc((void**) &input_d, N*sizeof(double));
 	cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU Allocation time");
 
     //Copying data to GPU from Host
     startTime(&timer);
-    
-	cudaError_t errMemcpyA = cudaMemcpy(input_d, input, N*sizeof(double), cudaMemcpyHostToDevice); cudaErrorCheck(errMemcpyA);
-	
+	cudaMemcpy(input_d, input, N*sizeof(double), cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Copying to GPU time");
 
     // Allocating partial sums
     startTime(&timer);
-	
+
     unsigned int numThreadsPerBlock = BLOCK_DIM;
     unsigned int numElementsPerBlock = 2*numThreadsPerBlock;
 	if (type != 1) { numElementsPerBlock *= COARSE_FACTOR; }
     const unsigned int numBlocks = (N + numElementsPerBlock - 1)/numElementsPerBlock;
-	
+    
     double* partialSums = (double*) malloc(numBlocks*sizeof(double));
     double* partialSums_d;
-    cudaError_t errMallocB = cudaMalloc((void**) &partialSums_d, numBlocks*sizeof(double));  cudaErrorCheck(errMallocB);
-	
+    cudaMalloc((void**) &partialSums_d, numBlocks*sizeof(double));
+    
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Allocating partial sums time");
@@ -115,30 +103,24 @@ double reduceGPU(double* input, unsigned int N, unsigned int type) {
 
 	//Copying data from GPU to Host
     startTime(&timer);
-
-    cudaError_t errMemcpyB = cudaMemcpy(partialSums, partialSums_d, numBlocks*sizeof(double), cudaMemcpyDeviceToHost); cudaErrorCheck(errMemcpyB);
-	
+    cudaMemcpy(partialSums, partialSums_d, numBlocks*sizeof(double), cudaMemcpyDeviceToHost); 
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Copying from GPU time");
 
     // Reducing partial sums on CPU
     startTime(&timer);
-	
     double sum = identity;
     for(unsigned int i = 0; i < numBlocks; ++i) {
         sum = f(sum, partialSums[i]);
     }
-	
     stopTime(&timer);
     printElapsedTime(timer, "Reducing partial sums on host time");
 
     // Freeing memory
     startTime(&timer);
-	
     cudaFree(input_d); cudaFree(partialSums_d);
     free(partialSums); 
-	
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Deallocation time");

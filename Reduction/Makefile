@@ -1,6 +1,6 @@
 NVCC        = nvcc
 NVCC_FLAGS  = -O3
-OBJ         = main.o kernel.o
+OBJ         = main.o reduction.o
 EXE         = reduction
 
 default: $(EXE)

@@ -1,4 +1,4 @@
-#include "common.h"
+#include "reduction.h"
 #include "../Helper_Code/timer.h"
 
 const double eps = 0.00001;
