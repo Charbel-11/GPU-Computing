@@ -1,4 +1,4 @@
-#include "common.h"
+#include "convolution.h"
 #include "../Helper_Code/timer.h"
 
 const float eps = 0.00001;

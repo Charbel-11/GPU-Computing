@@ -1,17 +1,9 @@
-#include "common.h"
+#include "convolution.h"
 #include "../Helper_Code/timer.h"
 
 #define OUT_BLOCK_DIM 32
 #define IN_TILE_DIM 64
 #define OUT_TILE_DIM ((IN_TILE_DIM) - 2*(MASK_RADIUS))
-
-#define cudaErrorCheck(error) { gpuAssert((error), __FILE__, __LINE__); }
-void gpuAssert(cudaError_t code, const char *file, const int line) {
-    if (code != cudaSuccess) {
-		fprintf(stderr, "CUDA Error: %s in file %s at line %d\n", cudaGetErrorString(code), file, line);
-		exit(code);
-	}
-}
 
 __constant__ float mask_c[MASK_DIM][MASK_DIM];
 
@@ -65,22 +57,17 @@ void convolutionGPU(float* input, float* output, float mask[MASK_DIM][MASK_DIM],
 
 	// Allocating GPU memory
     startTime(&timer);
-	
     float *input_d, *output_d;
-    cudaError_t errMallocA = cudaMalloc((void**) &input_d, width*height*sizeof(float)); cudaErrorCheck(errMallocA);
-    cudaError_t errMallocB = cudaMalloc((void**) &output_d, width*height*sizeof(float)); cudaErrorCheck(errMallocB);
-	
+    cudaMalloc((void**) &input_d, width*height*sizeof(float)); 
+    cudaMalloc((void**) &output_d, width*height*sizeof(float));
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU Allocation time");
 
     //Copying data to GPU from Host
     startTime(&timer);
-	
-    cudaError_t errMemcpyA = cudaMemcpy(input_d, input, width*height*sizeof(float), cudaMemcpyHostToDevice); cudaErrorCheck(errMemcpyA);
-    //Copy mask to constant memory
-	cudaError_t errMemcpyB = cudaMemcpyToSymbol(mask_c, mask, MASK_DIM*MASK_DIM*sizeof(float)); cudaErrorCheck(errMemcpyB);
-	
+    cudaMemcpy(input_d, input, width*height*sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpyToSymbol(mask_c, mask, MASK_DIM*MASK_DIM*sizeof(float)); //Copy mask to constant memory
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Copying to GPU time");
@@ -103,19 +90,14 @@ void convolutionGPU(float* input, float* output, float mask[MASK_DIM][MASK_DIM],
 	
 	//Copying data from GPU to Host
     startTime(&timer);
-
-    cudaError_t errMemcpyC = cudaMemcpy(output, output_d, width*height*sizeof(float), cudaMemcpyDeviceToHost); cudaErrorCheck(errMemcpyC);
-
+    cudaMemcpy(output, output_d, width*height*sizeof(float), cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Copying from GPU time");
 
 	//Freeing GPU memory
     startTime(&timer);
-
-    cudaError_t errFreeA = cudaFree(input_d); cudaErrorCheck(errFreeA);
-    cudaError_t errFreeB = cudaFree(output_d); cudaErrorCheck(errFreeB);
-
+    cudaFree(input_d); cudaFree(output_d);
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU Deallocation time");

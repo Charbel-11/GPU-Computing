@@ -1,7 +1,6 @@
 NVCC    = nvcc
-OBJ     = main.o kernel.o
+OBJ     = main.o convolution.o
 EXE     = convolution
-
 
 default: $(EXE)
 
