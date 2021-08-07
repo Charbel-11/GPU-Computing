@@ -1,5 +1,5 @@
 #include "common.h"
-#include "timer.h"
+#include "../Helper_Code/timer.h"
 
 #define cudaErrorCheck(error) { gpuAssert((error), __FILE__, __LINE__); }
 void gpuAssert(cudaError_t code, const char *file, const int line) {

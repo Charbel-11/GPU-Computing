@@ -1,5 +1,5 @@
 #include "common.h"
-#include "timer.h"
+#include "../Helper_Code/timer.h"
 
 const double eps = 1e-9;
 void checkIfEqual(double* cpuArray, double* gpuArray, unsigned int N){

@@ -1,5 +1,5 @@
 #include "common.h"
-#include "timer.h"
+#include "../Helper_Code/timer.h"
 
 #define OUT_BLOCK_DIM 32
 #define IN_TILE_DIM 64

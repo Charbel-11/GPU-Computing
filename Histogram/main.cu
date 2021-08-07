@@ -1,5 +1,5 @@
 #include "common.h"
-#include "timer.h"
+#include "../Helper_Code/timer.h"
 
 void checkIfEqual(unsigned int* binsCPU, unsigned int* binsGPU) {
     for (unsigned int b = 0; b < NUM_BINS; b++) {

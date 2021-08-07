@@ -1,5 +1,5 @@
 #include "common.h"
-#include "timer.h"
+#include "../Helper_Code/timer.h"
 
 #define BLOCK_DIM 1024  
 #define COARSE_FACTOR 3

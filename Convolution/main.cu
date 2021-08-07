@@ -1,5 +1,5 @@
 #include "common.h"
-#include "timer.h"
+#include "../Helper_Code/timer.h"
 
 const float eps = 0.00001;
 void checkIfEqual(float* cpuArray, float* gpuArray, unsigned int N){
