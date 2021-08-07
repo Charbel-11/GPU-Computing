@@ -1,4 +1,4 @@
-#include "common.h"
+#include "scan.h"
 #include "../Helper_Code/timer.h"
 
 const double eps = 0.00001;
@@ -12,10 +12,10 @@ void checkIfEqual(double* cpuArray, double* gpuArray, unsigned int N){
     }
 }
 
-void scanCPU(double* input, double* output, unsigned int N) {
-    output[0] = input[0];
+void scanCPU(double* input, double* output, unsigned int N, bool inclusive) {
+    output[0] = (inclusive ? input[0] : identity);
     for(unsigned int i = 1; i < N; i++) {
-        output[i] = f(output[i - 1], input[i]);
+        output[i] = f(output[i - 1], input[(inclusive ? i : i-1)]);
     }
 }
 
@@ -27,10 +27,13 @@ int main(int argc, char**argv) {
     // Allocate memory and initialize data
     Timer timer;
     unsigned int type = (argc > 1) ? (atoi(argv[1])) : 1;
-    unsigned int N = (argc > 2) ? (atoi(argv[2])) : 16000000;
+    bool inclusive = (argc > 2) ? (atoi(argv[2])) : 1;
+    unsigned int N = (argc > 3) ? (atoi(argv[3])) : 16000000;
 
-	if (type == 1){ printf("Running Kogge-Stone Scan\n"); }
-	else { printf("Running Brent-Kung Scan\n"); }
+	if (type == 1){ printf("Running Kogge-Stone Scan"); }
+	else { printf("Running Brent-Kung Scan"); }
+    if (inclusive) { printf(" (inclusive)\n"); }
+    else { printf(" (exclusive)\n"); }
 
     double* input = (double*) malloc(N*sizeof(double));
     double* outputCPU = (double*) malloc(N*sizeof(double));
@@ -40,13 +43,13 @@ int main(int argc, char**argv) {
 
     // Compute on CPU
     startTime(&timer);
-    scanCPU(input, outputCPU, N);
+    scanCPU(input, outputCPU, N, inclusive);
     stopTime(&timer);
     printElapsedTime(timer, "CPU time", BLUE);
 
     // Compute on GPU
     startTime(&timer);
-    scanGPU(input, outputGPU, N, type);
+    scanGPU(input, outputGPU, N, type, inclusive);
     stopTime(&timer);
     printElapsedTime(timer, "GPU time", RED);
 
