@@ -100,6 +100,13 @@ void mergeCPU(const T *A, const T *B, T *C, unsigned int n, unsigned int m){
 }
 
 template <typename T>
+void mergeGPUOnDevice(const T* A_d, const T *B_d, T *C_d, unsigned int n, unsigned int m, unsigned int type){
+    unsigned int numBlocks = (n+m + ELEMENTS_PER_BLOCK - 1) / ELEMENTS_PER_BLOCK;
+    if (type == 1) { mergeKernel<T> <<< numBlocks, THREADS_PER_BLOCK >>> (A_d, B_d, C_d, n, m); }
+    else { mergeKernelTiled<T> <<< numBlocks, THREADS_PER_BLOCK >>> (A_d, B_d, C_d, n, m); }
+}
+
+template <typename T>
 void mergeGPU(const T* A, const T *B, T *C, unsigned int n, unsigned int m, unsigned int type){
     Timer timer;
 
@@ -123,9 +130,7 @@ void mergeGPU(const T* A, const T *B, T *C, unsigned int n, unsigned int m, unsi
 
     // Computing on GPU
     startTime(&timer);
-    unsigned int numBlocks = (n+m + ELEMENTS_PER_BLOCK - 1) / ELEMENTS_PER_BLOCK;
-    if (type == 1) { mergeKernel<T> <<< numBlocks, THREADS_PER_BLOCK >>> (A_d, B_d, C_d, n, m); }
-    else { mergeKernelTiled<T> <<< numBlocks, THREADS_PER_BLOCK >>> (A_d, B_d, C_d, n, m); }
+    mergeGPUOnDevice<T>(A_d, B_d, C_d, n, m, type);
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU kernel time", GREEN);
@@ -148,5 +153,7 @@ void mergeGPU(const T* A, const T *B, T *C, unsigned int n, unsigned int m, unsi
 //Explicit instantiation to use different types
 template void mergeCPU(const int *A, const int *B, int *C, unsigned int n, unsigned int m);
 template void mergeGPU(const int *A, const int *B, int *C, unsigned int n, unsigned int m, unsigned int type);
+template void mergeGPUOnDevice(const int* A_d, const int *B_d, int *C_d, unsigned int n, unsigned int m, unsigned int type);
 template void mergeCPU(const unsigned int *A, const unsigned int *B, unsigned int *C, unsigned int n, unsigned int m);
 template void mergeGPU(const unsigned int *A, const unsigned int *B, unsigned int *C, unsigned int n, unsigned int m, unsigned int type);
+template void mergeGPUOnDevice(const unsigned int* A_d, const unsigned int *B_d, unsigned int *C_d, unsigned int n, unsigned int m, unsigned int type);
