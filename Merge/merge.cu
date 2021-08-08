@@ -5,7 +5,7 @@
 #define THREADS_PER_BLOCK 128
 #define ELEMENTS_PER_BLOCK (ELEMENTS_PER_THREAD * THREADS_PER_BLOCK)
 
-__host__ __device__ void mergeSequential(int* A, int *B, int *C, unsigned int n, unsigned int m){
+__host__ __device__ void mergeSequential(const int* A, const int *B, int *C, unsigned int n, unsigned int m){
     unsigned int i = 0, j = 0, k = 0;
     while(i < n && j < m){
         if (A[i] < B[j]){ C[k++] = A[i++]; }
@@ -15,7 +15,7 @@ __host__ __device__ void mergeSequential(int* A, int *B, int *C, unsigned int n,
     while(j < m){ C[k++] = B[j++]; }
 }
 
-__device__ unsigned int getCoRank(int *A, int *B, unsigned int n, unsigned int m, unsigned int k){
+__device__ unsigned int getCoRank(const int *A, const int *B, unsigned int n, unsigned int m, unsigned int k){
     unsigned int l = (k > m) ? (k - m) : 0;
     unsigned int r = (k < n) ? k : n;
 
@@ -28,7 +28,7 @@ __device__ unsigned int getCoRank(int *A, int *B, unsigned int n, unsigned int m
     }
 }
 
-__global__ void mergeKernel(int *A, int *B, int *C, unsigned int n, unsigned int m){
+__global__ void mergeKernel(const int *A, const int *B, int *C, unsigned int n, unsigned int m){
     unsigned int k = (blockIdx.x * blockDim.x + threadIdx.x) * ELEMENTS_PER_THREAD;
     if (k < m + n){ 
         unsigned int i = getCoRank(A, B, n, m, k);
@@ -42,7 +42,7 @@ __global__ void mergeKernel(int *A, int *B, int *C, unsigned int n, unsigned int
     }
 }
 
-__global__ void mergeKernelTiled(int *A, int *B, int *C, unsigned int n, unsigned int m){
+__global__ void mergeKernelTiled(const int *A, const int *B, int *C, unsigned int n, unsigned int m){
     unsigned int kBlock = blockIdx.x * ELEMENTS_PER_BLOCK;
     unsigned int kNextBlock = (blockIdx.x < gridDim.x - 1) ? (kBlock + ELEMENTS_PER_BLOCK) : (m + n);
 
@@ -90,11 +90,11 @@ __global__ void mergeKernelTiled(int *A, int *B, int *C, unsigned int n, unsigne
     }
 }
 
-void mergeCPU(int* A, int *B, int *C, unsigned int n, unsigned int m){
+void mergeCPU(const int* A, const int *B, int *C, unsigned int n, unsigned int m){
     mergeSequential(A, B, C, n, m);
 }
 
-void mergeGPU(int* A, int *B, int *C, unsigned int n, unsigned int m, unsigned int type){
+void mergeGPU(const int* A, const int *B, int *C, unsigned int n, unsigned int m, unsigned int type){
     Timer timer;
 
     // Allocating GPU memory
