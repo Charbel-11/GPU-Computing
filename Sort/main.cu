@@ -58,13 +58,18 @@ void radixSortCPU(const unsigned int* input, unsigned int* output, unsigned int 
 }
 
 void mergeSortCPU(const unsigned int* input, unsigned int* output, unsigned int N) {
-    if (N <= 1){ return; }
+    if (N == 0){ return; }
+    if (N == 1){ output[0] = input[0]; return; }
 
     unsigned int mid = N / 2;
     mergeSortCPU(input, output, mid);
     mergeSortCPU(&input[mid], &output[mid], N - mid);
 
-    mergeCPU<unsigned int>(input, &input[mid], output, mid, N-mid);
+    unsigned int* A = (unsigned int*) malloc(mid*sizeof(unsigned int));
+    unsigned int* B = (unsigned int*) malloc((N-mid)*sizeof(unsigned int));
+    memcpy(A, output, mid*sizeof(unsigned int));
+    memcpy(B, &output[mid], (N-mid)*sizeof(unsigned int));
+    mergeCPU<unsigned int>(A, B, output, mid, N-mid);
 }
 
 // Sorts an array A using either radix sort (type 1) or merge sort (type 2)
@@ -74,7 +79,7 @@ int main(int argc, char**argv) {
     // Allocate memory and initialize data
     Timer timer;
 	unsigned int type = (argc > 1) ? (atoi(argv[1])) : 1;
-    unsigned int N = (argc > 2) ? (atoi(argv[2])) : 16000000;
+    unsigned int N = (argc > 2) ? (atoi(argv[2])) : 10000000;
 	
 	if (type == 1){ printf("Running parallelized radix sort\n"); }
 	else { printf("Running parallelized merge sort\n"); }
@@ -100,7 +105,7 @@ int main(int argc, char**argv) {
     printElapsedTime(timer, "GPU time", RED);
 
     // Verify result
-    if (!checkIfSorted(outputCPU, N)){ printf("CPU array is not sorted"); }
+    if (!checkIfSorted(outputCPU, N)){ printf("CPU array is not sorted\n"); }
 	checkIfEqual(outputCPU, outputGPU, N);
 
     // Free memory

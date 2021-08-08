@@ -121,8 +121,6 @@ __global__ void addKernelBrentKung(T* output, const T* partialSums, unsigned int
 
 template <typename T>
 void scanGPUOnDevice(const T* input_d, T* output_d, unsigned int N, unsigned int type, bool inclusive) {
-    Timer timer;
-
     const unsigned int numThreadsPerBlock = BLOCK_DIM;
     const unsigned int numElementsPerBlock = numThreadsPerBlock * ((type == 1) ? 1 : 2);
     const unsigned int numBlocks = (N + numElementsPerBlock - 1) / numElementsPerBlock;
@@ -133,12 +131,8 @@ void scanGPUOnDevice(const T* input_d, T* output_d, unsigned int N, unsigned int
     cudaDeviceSynchronize();
 
     // Calling the kernel to scan each block on its own
-    startTime(&timer);
     if (type == 1) { scanKernelKoggeStone<T> <<< numBlocks, numThreadsPerBlock >>> (input_d, output_d, partialSums_d, N, inclusive); }
     else { scanKernelBrentKung<T> <<< numBlocks, numThreadsPerBlock >>> (input_d, output_d, partialSums_d, N, inclusive); } 
-    cudaDeviceSynchronize();
-    stopTime(&timer);
-    printElapsedTime(timer, "GPU kernel time", GREEN);
 
     // Recursively scan partial sums then add
     if (numBlocks > 1) {
@@ -149,7 +143,6 @@ void scanGPUOnDevice(const T* input_d, T* output_d, unsigned int N, unsigned int
 
     // Free memory
     cudaFree(partialSums_d);
-    cudaDeviceSynchronize();
 }
 
 template <typename T>
@@ -173,7 +166,11 @@ void scanGPU(const T* input, T* output, unsigned int N, unsigned int type, bool 
     printElapsedTime(timer, "Copying to GPU time");
 
     // Computing on GPU
+    startTime(&timer);
     scanGPUOnDevice<T>(input_d, output_d, N, type, inclusive);
+    cudaDeviceSynchronize();
+    stopTime(&timer);
+    printElapsedTime(timer, "GPU kernel time", GREEN);
 
 	// Copying data from GPU to Host
     startTime(&timer);

@@ -13,5 +13,4 @@ $(EXE): $(OBJ) $(DEP_OBJ)
 	$(NVCC) $(NVCC_FLAGS) $(OBJ) $(DEP_OBJ) -o $(EXE)
 
 clean:
-	rm -rf $(OBJ) $(EXE)
-
+	rm -rf $(OBJ) $(DEP_OBJ) $(EXE)
