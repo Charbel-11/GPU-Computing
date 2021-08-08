@@ -120,7 +120,7 @@ __global__ void addKernelBrentKung(T* output, const T* partialSums, unsigned int
 }
 
 template <typename T>
-void scanHelperGPU(const T* input_d, T* output_d, unsigned int N, unsigned int type, bool inclusive) {
+void scanGPUOnDevice(const T* input_d, T* output_d, unsigned int N, unsigned int type, bool inclusive) {
     Timer timer;
 
     const unsigned int numThreadsPerBlock = BLOCK_DIM;
@@ -142,7 +142,7 @@ void scanHelperGPU(const T* input_d, T* output_d, unsigned int N, unsigned int t
 
     // Recursively scan partial sums then add
     if (numBlocks > 1) {
-        scanHelperGPU<T>(partialSums_d, partialSums_d, numBlocks, type, inclusive);
+        scanGPUOnDevice<T>(partialSums_d, partialSums_d, numBlocks, type, inclusive);
         if (type == 1) { addKernelKoggeStone<T> <<< numBlocks, numThreadsPerBlock >>> (output_d, partialSums_d, N, inclusive); }
         else { addKernelBrentKung<T> <<< numBlocks, numThreadsPerBlock >>> (output_d, partialSums_d, N, inclusive); } 
     }
@@ -173,7 +173,7 @@ void scanGPU(const T* input, T* output, unsigned int N, unsigned int type, bool 
     printElapsedTime(timer, "Copying to GPU time");
 
     // Computing on GPU
-    scanHelperGPU<T>(input_d, output_d, N, type, inclusive);
+    scanGPUOnDevice<T>(input_d, output_d, N, type, inclusive);
 
 	// Copying data from GPU to Host
     startTime(&timer);
@@ -192,4 +192,6 @@ void scanGPU(const T* input, T* output, unsigned int N, unsigned int type, bool 
 
 
 template void scanGPU(const double* input, double* output, unsigned int N, unsigned int type, bool inclusive);
-template void scanGPU(const unsigned int* input, unsigned int* output, unsigned int N, unsigned int type, bool inclusive);
+
+template void scanGPUOnDevice(const double* input_d, double* output_d, unsigned int N, unsigned int type, bool inclusive);
+template void scanGPUOnDevice(const unsigned int* input_d, unsigned int* output_d, unsigned int N, unsigned int type, bool inclusive);

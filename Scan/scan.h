@@ -6,7 +6,12 @@ const int identity = 0;
 template <typename T>
 __host__ __device__ T f(T a, T b) { return a + b; }
 
+//Note that it is safe to have input = output as output is changed in the end only
 template <typename T>
 void scanGPU(const T* input, T* output, unsigned int N, unsigned int type, bool inclusive);
+
+//To be used by GPU algorithms that already loaded data
+template <typename T>
+void scanGPUOnDevice(const T* input_d, T* output_d, unsigned int N, unsigned int type, bool inclusive);
 
 #endif
