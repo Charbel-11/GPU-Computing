@@ -33,13 +33,13 @@ int main(int argc, char**argv) {
 
     // Compute on CPU
     startTime(&timer);
-    mergeCPU(A, B, outputCPU, n, m);
+    mergeCPU<int>(A, B, outputCPU, n, m);
     stopTime(&timer);
     printElapsedTime(timer, "CPU time", BLUE);
 
     // Compute on GPU
     startTime(&timer);
-    mergeGPU(A, B, outputGPU, n, m, type);
+    mergeGPU<int>(A, B, outputGPU, n, m, type);
     stopTime(&timer);
     printElapsedTime(timer, "GPU time", RED);    
 
