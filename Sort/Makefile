@@ -7,7 +7,7 @@ EXE         = sort
 default: $(EXE)
 
 %.o: %.cu
-	$(NVCC) -c -o $@ $<
+	$(NVCC) -dc -c -o $@ $<
 	
 $(EXE): $(OBJ) $(DEP_OBJ)
 	$(NVCC) $(NVCC_FLAGS) $(OBJ) $(DEP_OBJ) -o $(EXE)

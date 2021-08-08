@@ -153,7 +153,5 @@ void mergeGPU(const T* A, const T *B, T *C, unsigned int n, unsigned int m, unsi
 //Explicit instantiation to use different types
 template void mergeCPU(const int *A, const int *B, int *C, unsigned int n, unsigned int m);
 template void mergeGPU(const int *A, const int *B, int *C, unsigned int n, unsigned int m, unsigned int type);
-template void mergeGPUOnDevice(const int* A_d, const int *B_d, int *C_d, unsigned int n, unsigned int m, unsigned int type);
 template void mergeCPU(const unsigned int *A, const unsigned int *B, unsigned int *C, unsigned int n, unsigned int m);
 template void mergeGPU(const unsigned int *A, const unsigned int *B, unsigned int *C, unsigned int n, unsigned int m, unsigned int type);
-template void mergeGPUOnDevice(const unsigned int* A_d, const unsigned int *B_d, unsigned int *C_d, unsigned int n, unsigned int m, unsigned int type);

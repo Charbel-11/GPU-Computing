@@ -67,9 +67,12 @@ void mergeSortCPU(const unsigned int* input, unsigned int* output, unsigned int 
 
     unsigned int* A = (unsigned int*) malloc(mid*sizeof(unsigned int));
     unsigned int* B = (unsigned int*) malloc((N-mid)*sizeof(unsigned int));
+
     memcpy(A, output, mid*sizeof(unsigned int));
     memcpy(B, &output[mid], (N-mid)*sizeof(unsigned int));
     mergeCPU<unsigned int>(A, B, output, mid, N-mid);
+
+    free(A); free(B);
 }
 
 // Sorts an array A using either radix sort (type 1) or merge sort (type 2)
