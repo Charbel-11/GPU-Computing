@@ -49,7 +49,7 @@ int main(int argc, char**argv) {
 
     // Compute on GPU
     startTime(&timer);
-    scanGPU(input, outputGPU, N, type, inclusive);
+    scanGPU<double>(input, outputGPU, N, type, inclusive);
     stopTime(&timer);
     printElapsedTime(timer, "GPU time", RED);
 
