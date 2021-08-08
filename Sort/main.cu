@@ -119,8 +119,6 @@ int main(int argc, char**argv) {
     if (!checkIfSorted(outputGPU, N)){ printf("GPU array is not sorted\n"); }
 	checkIfEqual(outputCPU, outputGPU, N);
 
-    for(int i = 0; i < 10; i++){ printf("%u ", outputGPU[i]); }
-
     // Free memory
     free(input); 
     free(outputCPU); free(outputGPU);

@@ -26,9 +26,8 @@ __device__ unsigned int getCoRank(const T *A, const T *B, unsigned int n, unsign
     while(true){
         unsigned int i = (l + r) / 2;
         unsigned int j = k - i;
-        printf("(%u,%u,%u,%u,%u,%u,%u,%u,%u) ", i, l, r, j, k, A[i], (i?A[i-1]:0), B[j], (j?B[j-1]:0));
-        if (i > 0 && j < m && A[i-1] > B[j]) { r = i; }
-        else if (j > 0 && i < n && B[j-1] > A[i]){ l = i; }
+        if (i > 0 && j < m && A[i-1] > B[j]) { r = i - 1; }
+        else if (j > 0 && i < n && B[j-1] > A[i]){ l = i + 1; }
         else { return i; }
     }
 }
@@ -44,9 +43,7 @@ __global__ void mergeKernel(const T *A, const T *B, T *C, unsigned int n, unsign
         unsigned int iNext = getCoRank<T>(A, B, n, m, kNext);
         unsigned int jNext = kNext - iNext;
 
-        printf("(%u %u %u %u %u)  ", i, j, k, iNext, jNext);
         mergeSequential<T>(&A[i], &B[j], &C[k], iNext - i, jNext - j);
-        printf("OK:(%u %u %u %u %u) \n", i, j, k, iNext, jNext);
     }
 }
 
@@ -81,19 +78,13 @@ void mergeSortGPUHelper(const T* input_d, T* output_d, unsigned int N){
     bool outputIsCorrect = true;
 
     for (unsigned int stride = 1; stride < N; stride *= 2) {
-        printf("stride: %u\n", stride);
-        cudaDeviceSynchronize();
-        if (stride >= 100){
+        if (stride >= 10000){
             unsigned int numBlocks = (2*stride + ELEMENTS_PER_MERGE_BLOCK - 1) / ELEMENTS_PER_MERGE_BLOCK;
             for(unsigned int i = 0; i < N; i += 2 * stride){
                 unsigned int n = stride, m = stride;
                 if (i + stride >= N){ n = N - i; m = 0;}
                 else if (i + 2*stride >= N) { m = N - (i+stride); }
-                printf("Will merge %u %u %u\n", i, n, m);
-                cudaDeviceSynchronize();
                 mergeKernel<T> <<< numBlocks, THREADS_PER_MERGE_BLOCK >>> (&output_d[i], &output_d[i+n], &tempOutput_d[i], n, m);
-                cudaDeviceSynchronize();
-                printf("Done merging %u %u %u\n", i, n, m);
             }
         }
         else{

@@ -24,8 +24,8 @@ __device__ unsigned int getCoRank(const T *A, const T *B, unsigned int n, unsign
     while(true){
         unsigned int i = (l + r) / 2;
         unsigned int j = k - i;
-        if (i > 0 && j < m && A[i-1] > B[j]) { r = i; }
-        else if (j > 0 && i < n && B[j-1] > A[i]){ l = i; }
+        if (i > 0 && j < m && A[i-1] > B[j]) { r = i - 1; }
+        else if (j > 0 && i < n && B[j-1] > A[i]){ l = i + 1; }
         else { return i; }
     }
 }
