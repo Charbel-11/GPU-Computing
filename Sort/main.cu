@@ -13,7 +13,7 @@ bool checkIfSorted(const unsigned int* array, unsigned int N){
 void checkIfEqual(const unsigned int* arrayCPU, const unsigned int* arrayGPU, unsigned int N) {
     for (unsigned int i = 0; i < N; i++) {
         if(arrayCPU[i] != arrayGPU[i]) {
-            printf("Arrays are not equal (arrayCPU[%u] = %d, arrayGPU[%u] = %d)\n", i, arrayCPU[i], i, arrayGPU[i]);
+            printf("Arrays are not equal (arrayCPU[%u] = %u, arrayGPU[%u] = %u)\n", i, arrayCPU[i], i, arrayGPU[i]);
             return;
         }
     }
@@ -62,15 +62,22 @@ void mergeSortCPU(const unsigned int* input, unsigned int* output, unsigned int 
     if (N == 1){ output[0] = input[0]; return; }
 
     unsigned int mid = N / 2;
-    mergeSortCPU(input, output, mid);
-    mergeSortCPU(&input[mid], &output[mid], N - mid);
+    unsigned int n = mid, m = N-mid;
+    mergeSortCPU(input, output, n);
+    mergeSortCPU(&input[n], &output[n], m);
 
-    unsigned int* A = (unsigned int*) malloc(mid*sizeof(unsigned int));
-    unsigned int* B = (unsigned int*) malloc((N-mid)*sizeof(unsigned int));
+    unsigned int* A = (unsigned int*) malloc(n*sizeof(unsigned int));
+    unsigned int* B = (unsigned int*) malloc(m*sizeof(unsigned int));
+    memcpy(A, output, n*sizeof(unsigned int));
+    memcpy(B, &output[n], m*sizeof(unsigned int));
 
-    memcpy(A, output, mid*sizeof(unsigned int));
-    memcpy(B, &output[mid], (N-mid)*sizeof(unsigned int));
-    mergeCPU<unsigned int>(A, B, output, mid, N-mid);
+    unsigned int i = 0, j = 0, k = 0;
+    while(i < n && j < m){
+        if (A[i] < B[j]){ output[k++] = A[i++]; }
+        else { output[k++] = B[j++]; }
+    }
+    while(i < n){ output[k++] = A[i++]; }
+    while(j < m){ output[k++] = B[j++]; }
 
     free(A); free(B);
 }
@@ -109,7 +116,10 @@ int main(int argc, char**argv) {
 
     // Verify result
     if (!checkIfSorted(outputCPU, N)){ printf("CPU array is not sorted\n"); }
+    if (!checkIfSorted(outputGPU, N)){ printf("GPU array is not sorted\n"); }
 	checkIfEqual(outputCPU, outputGPU, N);
+
+    for(int i = 0; i < 10; i++){ printf("%u ", outputGPU[i]); }
 
     // Free memory
     free(input); 

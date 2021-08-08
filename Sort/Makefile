@@ -1,7 +1,7 @@
 NVCC        = nvcc
 NVCC_FLAGS  = -O3
 OBJ         = main.o mergeSort.o radixSort.o
-DEP_OBJ		= ../Merge/merge.o ../Scan/scan.o
+DEP_OBJ		= ../Scan/scan.o
 EXE         = sort
 
 default: $(EXE)

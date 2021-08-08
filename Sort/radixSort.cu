@@ -9,8 +9,8 @@ __global__ void moveToDestKernel(const unsigned int* input, unsigned int* output
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= N) { return; }
 
-    if ((input[i] >> curBit) & 1) { output[i - prefOnes[i]] = input[i]; }
-    else{ output[N - prefOnes[N] + prefOnes[i]] = input[i]; }
+    if ((input[i] >> curBit) & 1) { output[(N - prefOnes[N]) + prefOnes[i]] = input[i]; }
+    else{ output[i - prefOnes[i]] = input[i]; }
 }
 
 __global__ void extractOnesKernel(const unsigned int* input, unsigned int* ones, unsigned int curBit, unsigned int N){
@@ -30,13 +30,13 @@ void radixSortGPUHelper(const unsigned int* input_d, unsigned int* output_d, uns
 
     //First iteration done alone to move the values to the output array
     extractOnesKernel <<< numBlocks, BLOCK_DIM >>> (input_d, prefOnes, 0, N);
-    scanGPUOnDevice<unsigned int>(prefOnes, prefOnes, N, 1, false);
+    scanGPUOnDevice<unsigned int>(prefOnes, prefOnes, N + 1, 1, false);    
     moveToDestKernel <<< numBlocks, BLOCK_DIM >>> (input_d, tempOutput, prefOnes, 0, N);
     std::swap(tempOutput, output_d);
 
     for(unsigned int b = 1; b < 32; b++){
         extractOnesKernel <<< numBlocks, BLOCK_DIM >>> (output_d, prefOnes, b, N);
-        scanGPUOnDevice<unsigned int>(prefOnes, prefOnes, N, 1, false);
+        scanGPUOnDevice<unsigned int>(prefOnes, prefOnes, N + 1, 1, false);
         moveToDestKernel <<< numBlocks, BLOCK_DIM >>> (output_d, tempOutput, prefOnes, b, N);    
         std::swap(tempOutput, output_d);
     }

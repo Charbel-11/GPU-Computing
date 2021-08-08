@@ -1,9 +1,10 @@
 #include "sort.h"
 #include "../Helper_Code/timer.h"
+#include <algorithm>
 
-#define BLOCK_DIM 1024  
-#define ELEMENTS_PER_MERGE_THREAD 16
-#define THREADS_PER_MERGE_BLOCK 128
+#define BLOCK_DIM 512  
+#define ELEMENTS_PER_MERGE_THREAD 8
+#define THREADS_PER_MERGE_BLOCK 64
 #define ELEMENTS_PER_MERGE_BLOCK (ELEMENTS_PER_MERGE_THREAD * THREADS_PER_MERGE_BLOCK)
 
 template <typename T>
@@ -25,6 +26,7 @@ __device__ unsigned int getCoRank(const T *A, const T *B, unsigned int n, unsign
     while(true){
         unsigned int i = (l + r) / 2;
         unsigned int j = k - i;
+        printf("(%u,%u,%u,%u,%u,%u,%u,%u,%u) ", i, l, r, j, k, A[i], (i?A[i-1]:0), B[j], (j?B[j-1]:0));
         if (i > 0 && j < m && A[i-1] > B[j]) { r = i; }
         else if (j > 0 && i < n && B[j-1] > A[i]){ l = i; }
         else { return i; }
@@ -42,38 +44,30 @@ __global__ void mergeKernel(const T *A, const T *B, T *C, unsigned int n, unsign
         unsigned int iNext = getCoRank<T>(A, B, n, m, kNext);
         unsigned int jNext = kNext - iNext;
 
+        printf("(%u %u %u %u %u)  ", i, j, k, iNext, jNext);
         mergeSequential<T>(&A[i], &B[j], &C[k], iNext - i, jNext - j);
+        printf("OK:(%u %u %u %u %u) \n", i, j, k, iNext, jNext);
     }
 }
 
 template <typename T>
-__global__ void mergeSortKernel(const T* input_d, T* output_d, T* tempOutput_d, unsigned int N){
-    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
-   
+__global__ void setOutputKernel(const T* input_d, T* output_d, unsigned int N){
+    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;   
     if (i < N) { output_d[i] = input_d[i]; }
-    __syncthreads();
-    
-    bool outputIsCorrect = true;
-    for (unsigned int stride = 1; stride < N; stride *= 2) {
-        if (i < (N + 2 * stride - 1) / (2 * stride)){
-            unsigned int startIdx = i * 2 * stride;
-            if (startIdx + stride < N){
-                unsigned int n = stride, m = stride;
-                if (startIdx + 2 * stride - 1 >= N) { m = N - (startIdx + stride); }
-                
-                unsigned int numBlocks = (n+m + ELEMENTS_PER_MERGE_BLOCK - 1) / ELEMENTS_PER_MERGE_BLOCK;
-                mergeKernel<T> <<<numBlocks, THREADS_PER_MERGE_BLOCK >>> (&output_d[startIdx], &output_d[startIdx + stride], tempOutput_d, n, m);
-            }
-        }
-        __syncthreads();
+}
 
-        T* tmp = tempOutput_d;
-        tempOutput_d = output_d;
-        output_d = tmp;
-        outputIsCorrect = !outputIsCorrect;
-    }
+template <typename T>
+__global__ void mergeSortKernel(T* output_d, T* tempOutput_d, unsigned int stride, unsigned int N, unsigned int numThreadsNeeded){
+    unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
+    if (i >= numThreadsNeeded){ return; }
 
-    if (!outputIsCorrect && i < N){ output_d[i] = tempOutput_d[i]; }
+    unsigned int startIdx = i * 2 * stride;
+    unsigned int n = stride, m = stride;
+
+    if (startIdx + stride >= N){  n = N - startIdx; m = 0; }
+    else if (startIdx + 2 * stride - 1 >= N) { m = N - (startIdx + stride); }
+
+    mergeSequential<T>(&output_d[startIdx], &output_d[startIdx + n], &tempOutput_d[startIdx], n, m);
 }
 
 template <typename T>
@@ -83,7 +77,40 @@ void mergeSortGPUHelper(const T* input_d, T* output_d, unsigned int N){
     T *tempOutput_d;
     cudaMalloc((void**) &tempOutput_d, N*sizeof(T));
 
-    mergeSortKernel<T> <<< numBlocks, BLOCK_DIM >>> (input_d, output_d, tempOutput_d, N);    
+    setOutputKernel<T> <<< numBlocks, BLOCK_DIM >>> (input_d, output_d, N);
+    bool outputIsCorrect = true;
+
+    for (unsigned int stride = 1; stride < N; stride *= 2) {
+        printf("stride: %u\n", stride);
+        cudaDeviceSynchronize();
+        if (stride >= 100){
+            unsigned int numBlocks = (2*stride + ELEMENTS_PER_MERGE_BLOCK - 1) / ELEMENTS_PER_MERGE_BLOCK;
+            for(unsigned int i = 0; i < N; i += 2 * stride){
+                unsigned int n = stride, m = stride;
+                if (i + stride >= N){ n = N - i; m = 0;}
+                else if (i + 2*stride >= N) { m = N - (i+stride); }
+                printf("Will merge %u %u %u\n", i, n, m);
+                cudaDeviceSynchronize();
+                mergeKernel<T> <<< numBlocks, THREADS_PER_MERGE_BLOCK >>> (&output_d[i], &output_d[i+n], &tempOutput_d[i], n, m);
+                cudaDeviceSynchronize();
+                printf("Done merging %u %u %u\n", i, n, m);
+            }
+        }
+        else{
+            unsigned int numThreadsNeeded = (N + 2 * stride - 1) / (2 * stride);
+            numBlocks = (numThreadsNeeded + BLOCK_DIM - 1) / BLOCK_DIM;
+            mergeSortKernel<T> <<< numBlocks, BLOCK_DIM >>> (output_d, tempOutput_d, stride, N, numThreadsNeeded);
+        }
+        
+        std::swap(tempOutput_d, output_d);
+        outputIsCorrect = !outputIsCorrect;
+    }
+
+    if (!outputIsCorrect){ 
+        std::swap(tempOutput_d, output_d);
+        numBlocks = (N + BLOCK_DIM - 1) / BLOCK_DIM;
+        setOutputKernel<T> <<< numBlocks, BLOCK_DIM >>> (tempOutput_d, output_d, N);
+    }
 
     cudaFree(tempOutput_d);
 }
