@@ -7,13 +7,14 @@
 template <typename T>
 struct COOMatrix{
     unsigned int numRows, numCols, numNonzeros;
-    unsigned int *rowIdxs = nullptr, *colIdxs = nullptr;
-    T* values = nullptr; 
-    bool inGPU;
+    unsigned int *rowIdxs, *colIdxs; T* values; 
+    bool inGPU, allocatedMemory = false;
 
     COOMatrix(unsigned int _numRows, unsigned int _numCols, unsigned int _numNonZeros, bool _inGPU):
-    numRows(_numRows), numCols(_numCols), numNonzeros(_numNonZeros), inGPU(_inGPU) {
-        if (inGPU){
+    numRows(_numRows), numCols(_numCols), numNonzeros(_numNonZeros), inGPU(_inGPU) {}
+
+    void allocateArrayMemory(){
+         if (inGPU){
             cudaMalloc((void**) &rowIdxs, numNonzeros*sizeof(unsigned int)); 
             cudaMalloc((void**) &colIdxs, numNonzeros*sizeof(unsigned int));
             cudaMalloc((void**) &values, numNonzeros*sizeof(T));
@@ -23,9 +24,12 @@ struct COOMatrix{
             colIdxs = (unsigned int*) malloc(numNonzeros*sizeof(unsigned int));
             values = (T*) malloc(numNonzeros*sizeof(T));
         }
+        allocatedMemory = true;
     }
 
     void generateRandomMatrix(){
+        allocateArrayMemory();
+        
         std::set<std::pair<unsigned int, unsigned int>> seen;
         std::random_device rd; std::mt19937 gen(rd());
         std::uniform_int_distribution<unsigned int> distribRows(0, numRows - 1), distribCol(0, numCols - 1);
@@ -44,6 +48,7 @@ struct COOMatrix{
     }
 
     ~COOMatrix(){
+        if (!allocatedMemory){ return; }
         if (inGPU){
             cudaFree(rowIdxs); cudaFree(colIdxs); 
             cudaFree(values);

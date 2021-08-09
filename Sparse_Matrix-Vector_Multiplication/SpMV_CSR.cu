@@ -4,7 +4,7 @@
 #define BLOCK_DIM 1024
 
 template <typename T>
-__global__ void SpMV_CSR_Kernel(const CSRMatrix<T> csrMatrix, T* inVector, T* outVector){
+__global__ void SpMV_CSR_Kernel(const CSRMatrix<T> csrMatrix, const T* inVector, T* outVector){
     unsigned int row = blockIdx.x * blockDim.x + threadIdx.x;
     if (row >= csrMatrix.numRows){ return; }
 
@@ -23,6 +23,7 @@ void SpMV_CSR_GPU(const CSRMatrix<T>& csrMatrix, const T* inVector, T* outVector
 	// Allocating GPU memory
     startTime(&timer);
     CSRMatrix<T> csrMatrix_d(csrMatrix.numRows, csrMatrix.numCols, csrMatrix.numNonzeros, true);
+    csrMatrix_d.allocateArrayMemory();
     T *inVector_d, *outVector_d;
     cudaMalloc((void**) &inVector_d, csrMatrix_d.numCols*sizeof(T)); 
     cudaMalloc((void**) &outVector_d, csrMatrix_d.numRows*sizeof(T)); 

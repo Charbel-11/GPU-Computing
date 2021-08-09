@@ -4,7 +4,7 @@
 #define BLOCK_DIM 1024
 
 template <typename T>
-__global__ void SpMV_COO_Kernel(const COOMatrix<T> cooMatrix, T* inVector, T* outVector){
+__global__ void SpMV_COO_Kernel(const COOMatrix<T> cooMatrix, const T* inVector, T* outVector){
     unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i >= cooMatrix.numNonzeros){ return; }
 
@@ -20,6 +20,7 @@ void SpMV_COO_GPU(const COOMatrix<T>& cooMatrix, const T* inVector, T* outVector
 	// Allocating GPU memory
     startTime(&timer);
     COOMatrix<T> cooMatrix_d(cooMatrix.numRows, cooMatrix.numCols, cooMatrix.numNonzeros, true);
+    cooMatrix_d.allocateArrayMemory();
     T *inVector_d, *outVector_d;
     cudaMalloc((void**) &inVector_d, cooMatrix_d.numCols*sizeof(T)); 
     cudaMalloc((void**) &outVector_d, cooMatrix_d.numRows*sizeof(T)); 

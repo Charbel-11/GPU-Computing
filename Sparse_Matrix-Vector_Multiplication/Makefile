@@ -1,5 +1,5 @@
 NVCC    = nvcc
-OBJ     = main.o SpMV_COO.o SpMV_CSR.o
+OBJ     = main.o SpMV_COO.o SpMV_CSR.o SpMV_ELL.o
 EXE     = SpMV
 
 default: $(EXE)
