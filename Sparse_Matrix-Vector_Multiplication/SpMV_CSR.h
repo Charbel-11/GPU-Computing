@@ -27,9 +27,7 @@ struct CSRMatrix{
         allocatedMemory = true;
     }
 
-    void generateRandomMatrix(){
-        allocateArrayMemory();
-        
+    void generateRandomMatrix(){        
         std::set<std::pair<unsigned int, unsigned int>> seen;
         std::random_device rd; std::mt19937 gen(rd());
         std::uniform_int_distribution<unsigned int> distribRows(0, numRows - 1), distribCol(0, numCols - 1);
@@ -43,14 +41,7 @@ struct CSRMatrix{
             seen.insert({curRow, curCol});
         }
 
-        unsigned int curRow = 1, cnt = 0; rowPtrs[0] = 0;
-        for(auto &p : seen){
-            while (p.first >= curRow){ rowPtrs[curRow++] = cnt; }
-            colIdxs[cnt] = p.second;
-            values[cnt] = 1.0f*rand()/RAND_MAX;
-            cnt++; 
-        }
-        while(curRow <= numRows){ rowPtrs[curRow++] = cnt; }
+        convertPairsToCSR(seen);
     }
 
     ~CSRMatrix(){
@@ -63,6 +54,20 @@ struct CSRMatrix{
             free(rowPtrs); free(colIdxs);
             free(values);
         }
+    }
+    
+    private: 
+    void convertPairsToCSR(const std::set<std::pair<unsigned int, unsigned int>>& pairs){
+        allocateArrayMemory();
+
+        unsigned int curRow = 1, cnt = 0; rowPtrs[0] = 0;
+        for(auto &p : pairs){
+            while (p.first >= curRow){ rowPtrs[curRow++] = cnt; }
+            colIdxs[cnt] = p.second;
+            values[cnt] = 1.0f*rand()/RAND_MAX;
+            cnt++; 
+        }
+        while(curRow <= numRows){ rowPtrs[curRow++] = cnt; }
     }
 };
 
