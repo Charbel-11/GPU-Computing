@@ -4,16 +4,13 @@
 #define BLOCK_DIM 1024  
 #define COARSE_FACTOR 3
 
-__host__ __device__ double f(double a, double b){
-	return a+b;
-}
-
-__global__ void reduceKernel(double* input, double* partialSums, unsigned int N) {
+template <typename T>
+__global__ void reduceKernel(const T* input, T* partialSums, unsigned int N) {
     unsigned int segment = 2 * blockDim.x * blockIdx.x;
     unsigned int i = segment + threadIdx.x;
 
     // Loading data to shared memory
-    __shared__ double input_s[BLOCK_DIM];
+    __shared__ T input_s[BLOCK_DIM];
     if (i + BLOCK_DIM < N) { input_s[threadIdx.x] = f(input[i], input[i + BLOCK_DIM]); }
     else if (i < N) { input_s[threadIdx.x] = input[i]; }
     else { input_s[threadIdx.x] = identity; }
@@ -33,13 +30,14 @@ __global__ void reduceKernel(double* input, double* partialSums, unsigned int N)
 }
 
 // The higher the coarsening factor, the less we parallelize (which decreases the overhead for machines without enough resources)
-__global__ void reduceKernelWithThreadCoarsening(double* input, double* partialSums, unsigned int N) {
+template <typename T>
+__global__ void reduceKernelWithThreadCoarsening(const T* input, T* partialSums, unsigned int N) {
     unsigned int segment = 2 * blockDim.x * blockIdx.x * COARSE_FACTOR;
     unsigned int i = segment + threadIdx.x;
 
     // Loading data to shared memory
-    __shared__ double input_s[BLOCK_DIM];
-	double sum = identity;
+    __shared__ T input_s[BLOCK_DIM];
+	T sum = identity;
 	for(unsigned int tile = 0; tile < 2 * COARSE_FACTOR && i + tile*BLOCK_DIM < N; tile++){
 		sum = f(sum, input[i+tile*BLOCK_DIM]);
 	}
@@ -59,68 +57,56 @@ __global__ void reduceKernelWithThreadCoarsening(double* input, double* partialS
     }
 }
 
-double reduceGPU(double* input, unsigned int N, unsigned int type) {
+template <typename T>
+T reduceGPUHelper(const T* input_d, unsigned int N, unsigned int type){
+    unsigned int numThreadsPerBlock = BLOCK_DIM;
+    unsigned int numElementsPerBlock = 2*numThreadsPerBlock;
+	if (type != 1) { numElementsPerBlock *= COARSE_FACTOR; }
+    const unsigned int numBlocks = (N + numElementsPerBlock - 1)/numElementsPerBlock;
+
+    T* partialSums_d;
+    cudaMalloc((void**) &partialSums_d, numBlocks*sizeof(T));
+    
+	if (type == 1){ reduceKernel<T> <<< numBlocks, numThreadsPerBlock >>> (input_d, partialSums_d, N); }
+	else { reduceKernelWithThreadCoarsening<T> <<< numBlocks, numThreadsPerBlock >>> (input_d, partialSums_d, N); }
+
+    T sum;
+    if (numBlocks > 1){ sum = reduceGPUHelper<T>(partialSums_d, numBlocks, type); }
+    else{ cudaMemcpy(&sum, partialSums_d, sizeof(T), cudaMemcpyDeviceToHost); }
+
+    cudaFree(partialSums_d);
+    return sum;
+}
+
+template <typename T>
+T reduceGPU(const T* input, unsigned int N, unsigned int type) {
     Timer timer;
 
 	// Allocating GPU memory
     startTime(&timer);
-    double *input_d;
-    cudaMalloc((void**) &input_d, N*sizeof(double));
+    T *input_d;
+    cudaMalloc((void**) &input_d, N*sizeof(T));
 	cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU Allocation time");
 
     //Copying data to GPU from Host
     startTime(&timer);
-	cudaMemcpy(input_d, input, N*sizeof(double), cudaMemcpyHostToDevice);
+	cudaMemcpy(input_d, input, N*sizeof(T), cudaMemcpyHostToDevice);
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Copying to GPU time");
 
-    // Allocating partial sums
-    startTime(&timer);
-
-    unsigned int numThreadsPerBlock = BLOCK_DIM;
-    unsigned int numElementsPerBlock = 2*numThreadsPerBlock;
-	if (type != 1) { numElementsPerBlock *= COARSE_FACTOR; }
-    const unsigned int numBlocks = (N + numElementsPerBlock - 1)/numElementsPerBlock;
-    
-    double* partialSums = (double*) malloc(numBlocks*sizeof(double));
-    double* partialSums_d;
-    cudaMalloc((void**) &partialSums_d, numBlocks*sizeof(double));
-    
-    cudaDeviceSynchronize();
-    stopTime(&timer);
-    printElapsedTime(timer, "Allocating partial sums time");
-
     // Calling kernel
     startTime(&timer);
-	if (type == 1){ reduceKernel <<< numBlocks, numThreadsPerBlock >>> (input_d, partialSums_d, N); }
-	else { reduceKernelWithThreadCoarsening <<< numBlocks, numThreadsPerBlock >>> (input_d, partialSums_d, N); }
+    T sum = reduceGPUHelper<T>(input_d, N, type);
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU kernel time", GREEN);
 
-	//Copying data from GPU to Host
-    startTime(&timer);
-    cudaMemcpy(partialSums, partialSums_d, numBlocks*sizeof(double), cudaMemcpyDeviceToHost); 
-    cudaDeviceSynchronize();
-    stopTime(&timer);
-    printElapsedTime(timer, "Copying from GPU time");
-
-    // Reducing partial sums on CPU
-    startTime(&timer);
-    double sum = identity;
-    for(unsigned int i = 0; i < numBlocks; ++i) {
-        sum = f(sum, partialSums[i]);
-    }
-    stopTime(&timer);
-    printElapsedTime(timer, "Reducing partial sums on host time");
-
     // Freeing memory
     startTime(&timer);
-    cudaFree(input_d); cudaFree(partialSums_d);
-    free(partialSums); 
+    cudaFree(input_d); 
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "Deallocation time");
@@ -128,3 +114,4 @@ double reduceGPU(double* input, unsigned int N, unsigned int type) {
     return sum;
 }
 
+template double reduceGPU(const double* input, unsigned int N, unsigned int type);
