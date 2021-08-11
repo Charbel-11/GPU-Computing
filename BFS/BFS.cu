@@ -16,19 +16,34 @@ __global__ void BFS_VertexCentric_TopDown_Kernel(const GraphCSR graphCSR, unsign
     }
 }
 
-void BFS_VertexCentric_TopDown_Helper(const GraphCSR& graphCSR_d, unsigned int* dist_d, unsigned int* newVertexWasVisited_d, unsigned int src){
+__global__ void BFS_VertexCentric_BottomUp_Kernel(const GraphCSR graphCSR, unsigned int* dist, unsigned int* newVertexWasVisited, unsigned int curLevel){
+    unsigned int curNode = blockIdx.x * blockDim.x + threadIdx.x;
+    if (curNode >= graphCSR.numNodes || dist[curNode] != UINT_MAX) { return; }
+
+    for(unsigned int edge = graphCSR.srcPtrs[curNode]; edge < graphCSR.srcPtrs[curNode + 1]; edge++){
+        unsigned int curNeighbor = graphCSR.dest[edge];
+        if (dist[curNeighbor] == curLevel){
+            dist[curNode] = curLevel + 1;
+            *newVertexWasVisited = 1;
+            break;
+        }
+    }
+}
+
+void BFS_VertexCentric_Helper(const GraphCSR& graphCSR_d, unsigned int* dist_d, unsigned int* newVertexWasVisited_d, unsigned int src, unsigned int type){
     unsigned int numBlocks = (graphCSR_d.numNodes + BLOCK_DIM - 1) / BLOCK_DIM;
 
     unsigned int newVertexWasVisited = 1;
     for(unsigned int curLevel = 0; newVertexWasVisited; curLevel++){
         newVertexWasVisited = 0;
         cudaMemcpy(newVertexWasVisited_d, &newVertexWasVisited, sizeof(unsigned int), cudaMemcpyHostToDevice); 
-        BFS_VertexCentric_TopDown_Kernel <<< numBlocks, BLOCK_DIM >>> (graphCSR_d, dist_d, newVertexWasVisited_d, curLevel);
+        if (type == 1) { BFS_VertexCentric_TopDown_Kernel <<< numBlocks, BLOCK_DIM >>> (graphCSR_d, dist_d, newVertexWasVisited_d, curLevel); }
+        else { BFS_VertexCentric_BottomUp_Kernel <<< numBlocks, BLOCK_DIM >>> (graphCSR_d, dist_d, newVertexWasVisited_d, curLevel);  }
         cudaMemcpy(&newVertexWasVisited, newVertexWasVisited_d, sizeof(unsigned int), cudaMemcpyDeviceToHost);
     }
 }
 
-void BFS_VertexCentric_TopDown(const GraphCSR& graphCSR, unsigned int* dist, unsigned int src){
+void BFS_VertexCentric(const GraphCSR& graphCSR, unsigned int* dist, unsigned int src, unsigned int type){
     Timer timer;
 
 	// Allocating GPU memory
@@ -54,7 +69,7 @@ void BFS_VertexCentric_TopDown(const GraphCSR& graphCSR, unsigned int* dist, uns
 
     //Calling kernel
     startTime(&timer);
-    BFS_VertexCentric_TopDown_Helper(graphCSR_d, dist_d, newVertexWasVisited_d, src);
+    BFS_VertexCentric_Helper(graphCSR_d, dist_d, newVertexWasVisited_d, src, type);
     cudaDeviceSynchronize();
     stopTime(&timer);
     printElapsedTime(timer, "GPU kernel time", GREEN);

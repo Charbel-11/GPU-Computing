@@ -3,6 +3,6 @@
 
 #include "GraphCSR.h"
 
-void BFS_VertexCentric_TopDown(const GraphCSR& graphCSR, unsigned int* dist, unsigned int src);
+void BFS_VertexCentric(const GraphCSR& graphCSR, unsigned int* dist, unsigned int src, unsigned int type);
 
 #endif
