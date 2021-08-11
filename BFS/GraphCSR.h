@@ -50,7 +50,7 @@ struct GraphCSR{
     ~GraphCSR(){
         if (!allocatedMemory){ return; }
         if (inGPU){
-            cudaFree(srcPtrs); cudaFree(dest); 
+//            cudaFree(srcPtrs); cudaFree(dest); 
         }
         else{
             free(srcPtrs); free(dest);

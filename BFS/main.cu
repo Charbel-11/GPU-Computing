@@ -32,6 +32,7 @@ void BFS_CPU(const GraphCSR& graphCSR, unsigned int* dist, unsigned int src){
 
 // BFS takes an unweighted graph and a source node and finds the min distance between that source node and every other node
 // type 1 uses a top-down vertex-centric algorithm, type 2 uses a bottom-up vertex-centric algorithm
+// type 3 usee a direction-optimized vertex-centric algorithm
 int main(int argc, char**argv) {
     cudaDeviceSynchronize();
 
@@ -42,7 +43,8 @@ int main(int argc, char**argv) {
     unsigned int numEdges = (argc > 3) ? (atoi(argv[3])) : 500000;
 
     if (type == 1){ printf("Running a top-down vertex-centric parallelized BFS\n"); }
-    else { printf("Running a bottom-up vertex-centric parallelized BFS\n"); }
+    else if (type == 2) { printf("Running a bottom-up vertex-centric parallelized BFS\n"); }
+    else { printf("Running a direction-optimized vertex-centric parallelized BFS\n"); }
 
     unsigned int src = 0;
     unsigned int* distCPU = (unsigned int*) malloc(numNodes*sizeof(unsigned int));
