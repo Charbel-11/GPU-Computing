@@ -9,7 +9,7 @@
 struct GraphCSR{
     unsigned int numNodes, numEdges;
     unsigned int *srcPtrs, *dest;
-    bool inGPU, allocatedMemory = false;
+    bool inGPU;
 
     // numEdges is even since each edge is added in both directions and we have no self-loop
     GraphCSR(unsigned int _n, unsigned int _m, bool _inGPU):
@@ -17,7 +17,7 @@ struct GraphCSR{
         if (numEdges & 1) { numEdges++; }
     }
 
-    void allocateArrayMemory(){
+    void allocateMemory(){
         if (inGPU){
             cudaMalloc((void**) &srcPtrs, (numNodes + 1)*sizeof(unsigned int)); 
             cudaMalloc((void**) &dest, numEdges*sizeof(unsigned int));
@@ -26,7 +26,15 @@ struct GraphCSR{
             srcPtrs = (unsigned int*) malloc((numNodes + 1)*sizeof(unsigned int));
             dest = (unsigned int*) malloc(numEdges*sizeof(unsigned int));
         }
-        allocatedMemory = true;
+    }
+
+    void deallocateMemory(){
+        if (inGPU){
+            cudaFree(srcPtrs); cudaFree(dest); 
+        }
+        else{
+            free(srcPtrs); free(dest);
+        }
     }
 
     void generateRandomSymmetricMatrix(){        
@@ -47,19 +55,9 @@ struct GraphCSR{
         convertPairsToCSR(seen);
     }
 
-    ~GraphCSR(){
-        if (!allocatedMemory){ return; }
-        if (inGPU){
-//            cudaFree(srcPtrs); cudaFree(dest); 
-        }
-        else{
-            free(srcPtrs); free(dest);
-        }
-    }
-
     private:
     void convertPairsToCSR(const std::set<std::pair<unsigned int, unsigned int>>& pairs){
-        allocateArrayMemory();
+        allocateMemory();
 
         unsigned int curRow = 1, cnt = 0; srcPtrs[0] = 0;
         for(auto &p : pairs){

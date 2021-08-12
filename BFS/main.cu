@@ -40,11 +40,13 @@ int main(int argc, char**argv) {
     Timer timer;
     unsigned int type = (argc > 1) ? (atoi(argv[1])) : 1;
     unsigned int numNodes = (argc > 2) ? (atoi(argv[2])) : 100000;
-    unsigned int numEdges = (argc > 3) ? (atoi(argv[3])) : 500000;
+    unsigned int numEdges = (argc > 3) ? (atoi(argv[3])) : 1000000;
 
     if (type == 1){ printf("Running a top-down vertex-centric parallelized BFS\n"); }
     else if (type == 2) { printf("Running a bottom-up vertex-centric parallelized BFS\n"); }
-    else { printf("Running a direction-optimized vertex-centric parallelized BFS\n"); }
+    else if (type == 3) { printf("Running a direction-optimized vertex-centric parallelized BFS\n"); }
+    else if (type == 4) { printf("Running a frontier-based vertex-centric parallelized BFS\n"); }
+    else { printf("Running a frontier-based vertex-centric parallelized BFS with privatization\n"); }
 
     unsigned int src = 0;
     unsigned int* distCPU = (unsigned int*) malloc(numNodes*sizeof(unsigned int));
@@ -71,6 +73,7 @@ int main(int argc, char**argv) {
 
     // Free memory
     free(distCPU); free(distGPU);
+    graphCSR.deallocateMemory();
 
     return 0;
 }
