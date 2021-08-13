@@ -1,6 +1,6 @@
 # GPU Computing
 
-This is a collection of algorithms written in CUDA and to be run on GPU-enabled computers. It aims at improving the runtime of typical sequential implementations of those algorithms.
+This is a collection of algorithms written in CUDA and to be run on GPU-enabled computers. The aim is to improve the runtime of their typical sequential implementations.
 
 ## Problems
 The following problems were tackled:
