@@ -13,7 +13,7 @@ The following problems were tackled:
 * Sort algorithms 
   * Radix sort 
   * Merge sort
-* Sparse Matrix-Vector Multiplication representing sparse matrices with COO, CSR and ELL formats
+* Sparse Matrix-Vector Multiplication where sparse matrices are represented using either COO, CSR or ELL formats
 * Vector Operations
 
 ## Results
